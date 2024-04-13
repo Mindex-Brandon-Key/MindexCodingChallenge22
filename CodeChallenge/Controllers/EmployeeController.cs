@@ -48,7 +48,7 @@ namespace CodeChallenge.Controllers
         [HttpPut("{id}")]
         public IActionResult ReplaceEmployee(String id, [FromBody]Employee newEmployee)
         {
-            _logger.LogDebug($"Recieved employee update request for '{id}'");
+            _logger.LogDebug($"Received employee update request for '{id}'");
 
             var existingEmployee = _employeeService.GetById(id);
             if (existingEmployee == null)
@@ -57,6 +57,32 @@ namespace CodeChallenge.Controllers
             _employeeService.Replace(existingEmployee, newEmployee);
 
             return Ok(newEmployee);
+        }
+
+        [HttpGet("{id}/reporting-structure")]
+        public IActionResult GetReportingStructure(String id)
+        {
+            _logger.LogDebug($"Received employee reporting structure get request for '{id}'");
+
+            if (!HttpContext.Request.Headers.TryGetValue("Max-Depth", out var maxDepthValue))
+            {
+                // Default depth limit. A typical company shouldn't have more than 100 layers of employees, but a large company could overwrite, if needed.
+                maxDepthValue = "100";
+            }
+
+            if (!int.TryParse(maxDepthValue, out var maxDepth))
+            {
+                return BadRequest("Invalid Max-Depth header value.");
+            }
+
+            var reportingStructure = _employeeService.CalculateReportingStructure(id, maxDepth);
+
+            if (reportingStructure == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(reportingStructure);
         }
     }
 }

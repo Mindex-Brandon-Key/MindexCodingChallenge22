@@ -59,5 +59,54 @@ namespace CodeChallenge.Services
 
             return newEmployee;
         }
+
+        public ReportingStructure CalculateReportingStructure(String employeeId, int maxDepth)
+        {
+            // Retrieve the employee
+            var employee = _employeeRepository.GetById(employeeId);
+            if (employee == null)
+            {
+                return null;
+            }
+
+            // Calculate the direct reports
+            var reportIds = new HashSet<string>();
+            CalculateDirectReports(employee, 0, maxDepth, reportIds);
+
+            // Return the reporting structure
+            return new ReportingStructure
+            {
+                Employee = employee,
+                NumberOfReports = reportIds.Count,
+            };
+        }
+
+        private void CalculateDirectReports(Employee employee, int currentDepth, int maxDepth, HashSet<string> visitedIds)
+        {
+            // Check if maximum recursion depth is reached
+            if (currentDepth >= maxDepth)
+            {
+                return;
+            }
+
+            // Load direct reports for the current employee
+            // Note: this goes away if Lazy loading is enabled in the future.
+            _employeeRepository.LoadDirectReports(employee);
+
+            if (employee.DirectReports == null)
+            {
+                return;
+            }
+
+            foreach (var directReport in employee.DirectReports)
+            {
+                // Check for unique employee ID using HashSet
+                if (visitedIds.Add(directReport.EmployeeId))
+                {
+                    // If ID is added successfully, it's unique; continue recursion
+                    CalculateDirectReports(directReport, currentDepth + 1, maxDepth, visitedIds);
+                }
+            }
+        }
     }
 }

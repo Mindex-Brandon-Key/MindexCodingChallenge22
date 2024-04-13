@@ -1,4 +1,5 @@
 
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -32,6 +33,12 @@ namespace CodeCodeChallenge.Tests.Integration
         {
             _httpClient.Dispose();
             _testServer.Dispose();
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            _httpClient.DefaultRequestHeaders.Clear();
         }
 
         [TestMethod]
@@ -131,6 +138,78 @@ namespace CodeCodeChallenge.Tests.Integration
 
             // Assert
             Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [TestMethod]
+        public void GetReportingStructure_MissingEmployee_Returns_NotFound()
+        {
+            // Arrange
+            var employeeId = "JustAFakeId";
+
+            // Execute
+            var getRequestTask = _httpClient.GetAsync($"api/employee/{employeeId}/reporting-structure");
+            var response = getRequestTask.Result;
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [TestMethod]
+        public void GetReportingStructure_InvalidMaxDepth_Returns_BadRequest()
+        {
+            // Arrange
+            var employeeId = "16a596ae-edd3-4847-99fe-c4518e82c86f";
+            _httpClient.DefaultRequestHeaders.Add("Max-Depth", "Pizza-Pie");
+
+            // Execute
+            var getRequestTask = _httpClient.GetAsync($"api/employee/{employeeId}/reporting-structure");
+            var response = getRequestTask.Result;
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [TestMethod]
+        public void GetReportingStructure_JohnLennon_Returns_Ok()
+        {
+            // Arrange
+            var employeeId = "16a596ae-edd3-4847-99fe-c4518e82c86f";
+            var expectedFirstName = "John";
+            var expectedLastName = "Lennon";
+            var expectedNumberOfReports = 4;
+
+            // Execute
+            var getRequestTask = _httpClient.GetAsync($"api/employee/{employeeId}/reporting-structure");
+            var response = getRequestTask.Result;
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            var reportingStructure = response.DeserializeContent<ReportingStructure>();
+            Assert.AreEqual(expectedFirstName, reportingStructure.Employee.FirstName);
+            Assert.AreEqual(expectedLastName, reportingStructure.Employee.LastName);
+            Assert.AreEqual(expectedNumberOfReports, reportingStructure.NumberOfReports);
+        }
+
+        [TestMethod]
+        public void GetReportingStructure_JohnLennonAndMaxDepth1_Returns_Ok()
+        {
+            // Arrange
+            var employeeId = "16a596ae-edd3-4847-99fe-c4518e82c86f";
+            var expectedFirstName = "John";
+            var expectedLastName = "Lennon";
+            var expectedNumberOfReports = 2;
+            _httpClient.DefaultRequestHeaders.Add("Max-Depth", "1");
+
+            // Execute
+            var getRequestTask = _httpClient.GetAsync($"api/employee/{employeeId}/reporting-structure");
+            var response = getRequestTask.Result;
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            var reportingStructure = response.DeserializeContent<ReportingStructure>();
+            Assert.AreEqual(expectedFirstName, reportingStructure.Employee.FirstName);
+            Assert.AreEqual(expectedLastName, reportingStructure.Employee.LastName);
+            Assert.AreEqual(expectedNumberOfReports, reportingStructure.NumberOfReports);
         }
     }
 }

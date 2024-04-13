@@ -1,20 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeChallenge.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
 using CodeChallenge.Data;
 
 namespace CodeChallenge.Repositories
 {
-    public class EmployeeRespository : IEmployeeRepository
+    public class EmployeeRepository : IEmployeeRepository
     {
         private readonly EmployeeContext _employeeContext;
         private readonly ILogger<IEmployeeRepository> _logger;
 
-        public EmployeeRespository(ILogger<IEmployeeRepository> logger, EmployeeContext employeeContext)
+        public EmployeeRepository(ILogger<IEmployeeRepository> logger, EmployeeContext employeeContext)
         {
             _employeeContext = employeeContext;
             _logger = logger;
@@ -30,6 +28,14 @@ namespace CodeChallenge.Repositories
         public Employee GetById(string id)
         {
             return _employeeContext.Employees.SingleOrDefault(e => e.EmployeeId == id);
+        }
+
+        public Employee LoadDirectReports(Employee employee)
+        {
+            _employeeContext.Entry(employee)
+                    .Collection(e => e.DirectReports)
+                    .Load();
+            return employee;
         }
 
         public Task SaveAsync()
