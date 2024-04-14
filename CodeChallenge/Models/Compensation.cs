@@ -3,6 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CodeChallenge.Models;
 
+/// <summary>
+/// Represents a compensation for an <see cref="Employee"/>. An employee can have multiple
+/// compensations.
+/// </summary>
 public class Compensation
 {
     [Required]
