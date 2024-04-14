@@ -5,6 +5,7 @@ using CodeChallenge.Repositories;
 using CodeChallenge.Services;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,9 +42,12 @@ namespace CodeChallenge.Config
 
         private void AddServices(IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(App));
 
             services.AddScoped<IEmployeeService, EmployeeService>();
+            services.AddScoped<ICompensationService, CompensationService>();
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<ICompensationRepository, CompensationRepository>();
 
             services.AddControllers();
         }

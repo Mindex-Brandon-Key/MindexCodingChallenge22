@@ -1,9 +1,10 @@
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-
+using System.Threading.Tasks;
 using CodeChallenge.Models;
 
 using CodeCodeChallenge.Tests.Integration.Extensions;
@@ -16,29 +17,21 @@ namespace CodeCodeChallenge.Tests.Integration
     [TestClass]
     public class EmployeeControllerTests
     {
-        private static HttpClient _httpClient;
-        private static TestServer _testServer;
+        private HttpClient _httpClient;
+        private TestServer _testServer;
 
-        [ClassInitialize]
-        // Attribute ClassInitialize requires this signature
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "<Pending>")]
-        public static void InitializeClass(TestContext context)
+        [TestInitialize]
+        public void TestInitialize()
         {
             _testServer = new TestServer();
             _httpClient = _testServer.NewClient();
         }
 
-        [ClassCleanup]
-        public static void CleanUpTest()
-        {
-            _httpClient.Dispose();
-            _testServer.Dispose();
-        }
-
         [TestCleanup]
         public void TestCleanup()
         {
-            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.Dispose();
+            _testServer.Dispose();
         }
 
         [TestMethod]
@@ -210,6 +203,157 @@ namespace CodeCodeChallenge.Tests.Integration
             Assert.AreEqual(expectedFirstName, reportingStructure.Employee.FirstName);
             Assert.AreEqual(expectedLastName, reportingStructure.Employee.LastName);
             Assert.AreEqual(expectedNumberOfReports, reportingStructure.NumberOfReports);
+        }
+
+        [TestMethod]
+        public async Task CreateCompensation_MissingEmployee_Returns_BadRequest()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.BadRequest;
+
+            var compensationRequest = new CompensationCreateDto()
+            {
+                Salary = 100000,
+                EffectiveDate = DateTime.Today,
+            };
+            var requestContent = new JsonSerialization().ToJson(compensationRequest);
+
+            var employeeId = "MissingEmployeeId";
+
+            // Act
+            var response =  await _httpClient.PostAsync($"api/employee/{employeeId}/compensations",
+               new StringContent(requestContent, Encoding.UTF8, "application/json"));
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateCompensation_EmptyBody_Returns_BadRequest()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.BadRequest;
+
+            var employeeId = "03aa1462-ffa9-4978-901b-7c001562cf6f";
+
+            // Act
+            var response = await _httpClient.PostAsync($"api/employee/{employeeId}/compensations",
+               new StringContent(string.Empty, Encoding.UTF8, "application/json"));
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task CreateCompensation_ValidRequest_Returns_Created()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.Created;
+
+            var compensationRequest = new CompensationCreateDto()
+            {
+                Salary = 100000,
+                EffectiveDate = DateTime.Today,
+            };
+            var requestContent = new JsonSerialization().ToJson(compensationRequest);
+
+            var employeeId = "03aa1462-ffa9-4978-901b-7c001562cf6f";
+
+            // Act
+            var response = await _httpClient.PostAsync($"api/employee/{employeeId}/compensations",
+               new StringContent(requestContent, Encoding.UTF8, "application/json"));
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+            var compensation = response.DeserializeContent<Compensation>();
+            Assert.AreEqual(compensationRequest.Salary, compensation.Salary);
+            Assert.AreEqual(compensationRequest.EffectiveDate, compensation.EffectiveDate);
+            Assert.AreEqual(employeeId, compensation.EmployeeId);
+            Assert.IsNotNull(compensation.CompensationId);
+        }
+
+        [TestMethod]
+        public async Task GetCompensationByEmployeeId_MissingEmployee_Returns_NotFound()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.NotFound;
+
+            var employeeId = "MissingEmployeeId";
+
+            // Act
+            var response = await _httpClient.GetAsync($"api/employee/{employeeId}/compensations");
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task GetCompensationByEmployeeId_NoCompensations_Returns_OkAndEmpty()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.OK;
+
+            var employeeId = "03aa1462-ffa9-4978-901b-7c001562cf6f";
+
+            // Act
+            var response = await _httpClient.GetAsync($"api/employee/{employeeId}/compensations");
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+            var result = response.DeserializeContent<CompensationListDto>();
+            Assert.AreEqual(0, result.Count);
+            Assert.AreEqual(employeeId, result.EmployeeId);
+        }
+
+        [TestMethod]
+        public async Task GetCompensationByEmployeeId_Returns_Ok()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.OK;
+
+            var employeeId = "03aa1462-ffa9-4978-901b-7c001562cf6f";
+
+            var compensationRequestA = new CompensationCreateDto()
+            {
+                EffectiveDate = new DateTime(2023, 3, 13),
+                Salary = 50000,
+            };
+
+            var compensationRequestB = new CompensationCreateDto()
+            {
+                EffectiveDate = new DateTime(2024, 4, 13),
+                Salary = 60000,
+            };
+
+            var compensationA = await AddCompensation(compensationRequestA, employeeId);
+            var compensationB = await AddCompensation(compensationRequestB, employeeId);
+
+            // Act
+            var response = await _httpClient.GetAsync($"api/employee/{employeeId}/compensations");
+
+            // Assert
+            Assert.AreEqual(expectedStatus, response.StatusCode);
+            var result = response.DeserializeContent<CompensationListDto>();
+            Assert.AreEqual(2, result.Count);
+            Assert.AreEqual(employeeId, result.EmployeeId);
+            Assert.AreEqual(compensationA.CompensationId, result.Compensations[0].CompensationId);
+            Assert.AreEqual(compensationRequestA.Salary, result.Compensations[0].Salary);
+            Assert.AreEqual(compensationRequestA.EffectiveDate, result.Compensations[0].EffectiveDate);
+            Assert.AreEqual(compensationB.CompensationId, result.Compensations[1].CompensationId);
+            Assert.AreEqual(compensationRequestB.Salary, result.Compensations[1].Salary);
+            Assert.AreEqual(compensationRequestB.EffectiveDate, result.Compensations[1].EffectiveDate);
+        }
+
+        private async Task<Compensation> AddCompensation(CompensationCreateDto compensationRequest, string employeeId)
+        {
+            var requestContent = new JsonSerialization().ToJson(compensationRequest);
+
+            var response = await _httpClient.PostAsync($"api/employee/{employeeId}/compensations",
+               new StringContent(requestContent, Encoding.UTF8, "application/json"));
+
+            var compensation = response.DeserializeContent<Compensation>();
+
+            return compensation;
         }
     }
 }
