@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CodeChallenge.Tests.Integration;
+namespace CodeChallenge.Tests.Unit;
 
 [TestClass]
 public class CompensationServiceTests

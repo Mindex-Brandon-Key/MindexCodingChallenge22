@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
-namespace CodeCodeChallenge.Tests.Integration
+namespace CodeCodeChallenge.Tests.Unit
 {
     [TestClass]
     public class EmployeeServiceTests

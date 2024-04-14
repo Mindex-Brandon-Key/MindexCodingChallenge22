@@ -22,6 +22,9 @@ namespace CodeCodeChallenge.Tests.Integration.Helpers
             return applicationFactory.CreateClient();
         }
 
+        /// <summary>
+        /// Database must be reset between tests to avoid Setup issues when running multiple tests together.
+        /// </summary>
         private void ResetDatabase()
         {
             using (var scope = applicationFactory.Services.CreateScope())
