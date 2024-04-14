@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
-namespace CodeCodeChallenge.Tests.Integration
+namespace CodeCodeChallenge.Tests.Unit
 {
     [TestClass]
     public class EmployeeServiceTests
@@ -19,7 +19,7 @@ namespace CodeCodeChallenge.Tests.Integration
         private EmployeeContext _employeeContext;
         private IEmployeeRepository _employeeRepository;
         private Mock<ILogger<EmployeeService>> _mockLogger;
-        private new Faker<Employee> _employeeFaker;
+        private Faker<Employee> _employeeFaker;
 
         private IEmployeeService _employeeService;
 

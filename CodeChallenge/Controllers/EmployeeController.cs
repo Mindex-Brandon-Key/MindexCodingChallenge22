@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using CodeChallenge.Services;
 using CodeChallenge.Models;
+using AutoMapper;
 
 namespace CodeChallenge.Controllers
 {
@@ -83,6 +84,61 @@ namespace CodeChallenge.Controllers
             }
 
             return Ok(reportingStructure);
+        }
+
+        [HttpPost("{id}/compensations")]
+        public async Task<IActionResult> CreateCompensation(
+            string id,
+            [FromBody] CompensationCreateDto compensationRequest,
+            [FromServices] ICompensationService compensationService)
+        {
+            if (compensationRequest == null)
+            {
+                return BadRequest("Compensation data is required.");
+            }
+
+            try
+            {
+                var compensation = await compensationService.AddCompensationAsync(compensationRequest, id);
+                return CreatedAtAction(nameof(GetCompensationByEmployeeId), new { id = compensation.CompensationId }, compensation);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("{id}/compensations")]
+        public async Task<IActionResult> GetCompensationByEmployeeId(
+            string id,
+            [FromServices] ICompensationService compensationService,
+            [FromServices] IMapper mapper)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return BadRequest("Invalid employee ID.");
+            }
+
+            var compensations = await compensationService.GetCompensationsByEmployeeIdAsync(id);
+            if (compensations == null)
+            {
+                return NotFound($"No compensations found for employee ID {id}.");
+            }
+
+            var result = new CompensationListDto()
+            {
+                EmployeeId = id,
+                Count = compensations.Count,
+                Compensations = compensations
+                    .Select(x => mapper.Map<CompensationListItemDto>(x))
+                    .ToList(),
+            };
+
+            return Ok(result);
         }
     }
 }

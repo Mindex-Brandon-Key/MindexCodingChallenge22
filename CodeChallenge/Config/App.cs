@@ -41,9 +41,12 @@ namespace CodeChallenge.Config
 
         private void AddServices(IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(App));
 
             services.AddScoped<IEmployeeService, EmployeeService>();
+            services.AddScoped<ICompensationService, CompensationService>();
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<ICompensationRepository, CompensationRepository>();
 
             services.AddControllers();
         }
