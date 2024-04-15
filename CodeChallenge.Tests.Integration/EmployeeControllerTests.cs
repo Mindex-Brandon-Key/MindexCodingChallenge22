@@ -206,6 +206,27 @@ namespace CodeCodeChallenge.Tests.Integration
         }
 
         [TestMethod]
+        public void GetReportingStructure_PeteBest_Returns_Ok()
+        {
+            // Arrange
+            var employeeId = "62c1084e-6e34-4630-93fd-9153afb65309";
+            var expectedFirstName = "Pete";
+            var expectedLastName = "Best";
+            var expectedNumberOfReports = 0;
+
+            // Execute
+            var getRequestTask = _httpClient.GetAsync($"api/employee/{employeeId}/reporting-structure");
+            var response = getRequestTask.Result;
+
+            // Assert
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            var reportingStructure = response.DeserializeContent<ReportingStructure>();
+            Assert.AreEqual(expectedFirstName, reportingStructure.Employee.FirstName);
+            Assert.AreEqual(expectedLastName, reportingStructure.Employee.LastName);
+            Assert.AreEqual(expectedNumberOfReports, reportingStructure.NumberOfReports);
+        }
+
+        [TestMethod]
         public async Task CreateCompensation_MissingEmployee_Returns_BadRequest()
         {
             // Arrange
